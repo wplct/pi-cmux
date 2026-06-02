@@ -9,7 +9,7 @@ interface ReviewRequest {
 }
 
 function getReviewUsage(commandName: string): string {
-	return `Usage: /${commandName}  (defaults to --diff)  |  /${commandName} [--bugs|--refactor|--tests] <target>  |  /${commandName} --diff [focus]`;
+	return `用法：/${commandName}（默认审查当前 diff） | /${commandName} [--bugs|--refactor|--tests] <目标> | /${commandName} --diff [关注点]`;
 }
 
 function parseReviewArgs(args: string): { ok: true; request: ReviewRequest } | { ok: false; error: string } {
@@ -31,10 +31,10 @@ function parseReviewArgs(args: string): { ok: true; request: ReviewRequest } | {
 		if (token === "--tests") nextMode = "tests";
 		if (token === "--diff") nextMode = "diff";
 		if (!nextMode) {
-			return { ok: false, error: `Unknown review flag: ${token}` };
+			return { ok: false, error: `未知 review 参数：${token}` };
 		}
 		if (modeWasExplicit) {
-			return { ok: false, error: "Use only one review mode flag at a time" };
+			return { ok: false, error: "一次只能使用一个 review 模式参数" };
 		}
 		mode = nextMode;
 		modeWasExplicit = true;
@@ -43,7 +43,7 @@ function parseReviewArgs(args: string): { ok: true; request: ReviewRequest } | {
 
 	const targetOrFocus = tokens.slice(index).join(" ").trim() || undefined;
 	if (mode !== "diff" && !targetOrFocus) {
-		return { ok: false, error: "Specify a file or directory to review" };
+		return { ok: false, error: "请指定要审查的文件或目录" };
 	}
 
 	return { ok: true, request: { mode, targetOrFocus } };
@@ -115,7 +115,7 @@ function registerReviewCommand(
 			if (result.ok) {
 				ctx.ui.notify(successMessage, "info");
 			} else {
-				ctx.ui.notify(`review split failed: ${result.error}`, "error");
+				ctx.ui.notify(`review 分屏打开失败：${result.error}`, "error");
 			}
 		},
 	});
@@ -126,29 +126,29 @@ export default function cmuxReviewExtension(pi: ExtensionAPI) {
 		pi,
 		"cmrv",
 		"right",
-		"Open a new right split and start a fresh pi code review session",
-		"Opened a review split to the right",
+		"在右侧新开代码审查 Pi 会话",
+		"已在右侧打开 review 分屏",
 	);
 	registerReviewCommand(
 		pi,
 		"review-v",
 		"right",
-		"Alias for /cmrv",
-		"Opened a review split to the right",
+		"/cmrv 的别名",
+		"已在右侧打开 review 分屏",
 	);
 
 	registerReviewCommand(
 		pi,
 		"cmrh",
 		"down",
-		"Open a new lower split and start a fresh pi code review session",
-		"Opened a review split below",
+		"在下方新开代码审查 Pi 会话",
+		"已在下方打开 review 分屏",
 	);
 	registerReviewCommand(
 		pi,
 		"review-h",
 		"down",
-		"Alias for /cmrh",
-		"Opened a review split below",
+		"/cmrh 的别名",
+		"已在下方打开 review 分屏",
 	);
 }

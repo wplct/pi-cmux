@@ -90,22 +90,22 @@ const CMUX_OPEN_TERMINAL_PARAMETERS = {
 	properties: {
 		command: {
 			type: "string",
-			description: "Interactive terminal command to run, for example k9s, htop, lazygit, or npm run dev",
+			description: "要运行的交互式终端命令，例如 k9s、htop、lazygit 或 npm run dev",
 		},
 		placement: {
 			type: "string",
 			enum: ["right", "down", "tab"],
 			default: "tab",
-			description: "Where to open the command. Use tab for a new cmux tab/surface.",
+			description: "命令打开的位置。使用 tab 表示新的 cmux 标签页/界面。",
 		},
 		title: {
 			type: "string",
-			description: "Optional cmux tab title. Defaults to the command.",
+			description: "可选的 cmux 标签标题，默认使用命令本身。",
 		},
 		focus: {
 			type: "boolean",
 			default: true,
-			description: "Whether cmux should focus the new terminal. Defaults to true.",
+			description: "是否让 cmux 聚焦新终端，默认 true。",
 		},
 	},
 } as const;
@@ -193,13 +193,13 @@ function readJsonFile(path: string): Record<string, unknown> | undefined {
 	try {
 		const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
 		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-			console.warn(`[pi-cmux] Ignoring non-object settings file: ${path}`);
+			console.warn(`[pi-cmux] 忽略非对象格式的设置文件：${path}`);
 			return undefined;
 		}
 		return parsed as Record<string, unknown>;
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		console.warn(`[pi-cmux] Failed to read settings from ${path}: ${message}`);
+		console.warn(`[pi-cmux] 读取设置文件失败：${path}：${message}`);
 		return undefined;
 	}
 }
@@ -211,7 +211,7 @@ function readPiCmuxCommands(settingsPath: string): Record<string, unknown> {
 		return {};
 	}
 	if (typeof section !== "object" || Array.isArray(section)) {
-		console.warn(`[pi-cmux] Ignoring invalid \"${SETTINGS_SECTION_NAME}\" settings in ${settingsPath}`);
+		console.warn(`[pi-cmux] 忽略 ${settingsPath} 中无效的 \"${SETTINGS_SECTION_NAME}\" 设置`);
 		return {};
 	}
 
@@ -220,7 +220,7 @@ function readPiCmuxCommands(settingsPath: string): Record<string, unknown> {
 		return {};
 	}
 	if (typeof commands !== "object" || Array.isArray(commands)) {
-		console.warn(`[pi-cmux] Ignoring invalid \"${SETTINGS_SECTION_NAME}.commands\" settings in ${settingsPath}`);
+		console.warn(`[pi-cmux] 忽略 ${settingsPath} 中无效的 \"${SETTINGS_SECTION_NAME}.commands\" 设置`);
 		return {};
 	}
 
@@ -232,7 +232,7 @@ function isValidCommandName(value: string): boolean {
 }
 
 function getDefaultConfiguredCommandDescription(commandName: string, run: string): string {
-	return `Open ${run} in a cmux split via /${commandName}`;
+	return `通过 /${commandName} 在 cmux 分屏中打开 ${run}`;
 }
 
 function normalizeSplitDirection(
@@ -248,7 +248,7 @@ function normalizeSplitDirection(
 	}
 
 	console.warn(
-		`[pi-cmux] Skipping configured command /${commandName} with invalid direction from ${settingsPath}; expected \"right\" or \"down\"`,
+		`[pi-cmux] 跳过 ${settingsPath} 中 direction 无效的自定义命令 /${commandName}；应为 \"right\" 或 \"down\"`,
 	);
 	return undefined;
 }
@@ -259,14 +259,14 @@ function normalizeConfiguredSplitCommand(
 	settingsPath: string,
 ): ConfiguredSplitCommand | null | undefined {
 	if (!isValidCommandName(commandName)) {
-		console.warn(`[pi-cmux] Skipping invalid configured command name \"${commandName}\" from ${settingsPath}`);
+		console.warn(`[pi-cmux] 跳过 ${settingsPath} 中名称无效的自定义命令 \"${commandName}\"`);
 		return undefined;
 	}
 
 	if (typeof value === "string") {
 		const run = value.trim();
 		if (!run) {
-			console.warn(`[pi-cmux] Skipping empty configured command /${commandName} from ${settingsPath}`);
+			console.warn(`[pi-cmux] 跳过 ${settingsPath} 中内容为空的自定义命令 /${commandName}`);
 			return undefined;
 		}
 		return {
@@ -278,7 +278,7 @@ function normalizeConfiguredSplitCommand(
 	}
 
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
-		console.warn(`[pi-cmux] Skipping invalid configured command /${commandName} from ${settingsPath}`);
+		console.warn(`[pi-cmux] 跳过 ${settingsPath} 中配置无效的自定义命令 /${commandName}`);
 		return undefined;
 	}
 
@@ -289,7 +289,7 @@ function normalizeConfiguredSplitCommand(
 
 	const run = typeof config.run === "string" ? config.run.trim() : "";
 	if (!run) {
-		console.warn(`[pi-cmux] Skipping configured command /${commandName} without a valid \"run\" value from ${settingsPath}`);
+		console.warn(`[pi-cmux] 跳过 ${settingsPath} 中缺少有效 \"run\" 值的自定义命令 /${commandName}`);
 		return undefined;
 	}
 
@@ -344,17 +344,17 @@ function registerConfiguredSplitCommand(
 		handler: async (args, ctx) => {
 			const trimmedArgs = args.trim();
 			if (trimmedArgs.length > 0 && !config.acceptArgs) {
-				ctx.ui.notify(`Usage: /${commandName}`, "warning");
+				ctx.ui.notify(`用法：/${commandName}`, "warning");
 				return;
 			}
 
 			const command = trimmedArgs.length > 0 ? `${config.run} ${trimmedArgs}` : config.run;
 			const result = await openToolInSplit(pi, ctx, config.direction, command, config.title ?? config.run);
 			if (result.ok) {
-				const location = config.direction === "right" ? "to the right" : "below";
-				ctx.ui.notify(`Opened /${commandName} split ${location}`, "info");
+				const location = config.direction === "right" ? "右侧" : "下方";
+				ctx.ui.notify(`已在${location}打开 /${commandName} 分屏`, "info");
 			} else {
-				ctx.ui.notify(`configured command failed: ${result.error}`, "error");
+				ctx.ui.notify(`自定义命令执行失败：${result.error}`, "error");
 			}
 		},
 	});
@@ -366,12 +366,12 @@ function normalizeTerminalPlacement(value: unknown): TerminalPlacement {
 
 function getPlacementLabel(placement: TerminalPlacement): string {
 	if (placement === "right") {
-		return "right split";
+		return "右侧分屏";
 	}
 	if (placement === "down") {
-		return "lower split";
+		return "下方分屏";
 	}
-	return "tab";
+	return "标签页";
 }
 
 async function openTerminalCommand(
@@ -381,7 +381,7 @@ async function openTerminalCommand(
 ): Promise<{ ok: true; placement: TerminalPlacement; command: string } | { ok: false; error: string }> {
 	const command = typeof params.command === "string" ? params.command.trim() : "";
 	if (!command) {
-		return { ok: false, error: "Specify a command to open" };
+		return { ok: false, error: "请指定要打开的命令" };
 	}
 
 	const placement = normalizeTerminalPlacement(params.placement);
@@ -401,16 +401,16 @@ async function openTerminalCommand(
 function registerAgentTerminalTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "cmux_open_terminal",
-		label: "Open cmux terminal",
+		label: "打开 cmux 终端",
 		description:
-			"Open an interactive terminal command in cmux as a right split, lower split, or new tab/surface. Use for user-requested TUIs, logs, dev servers, watches, or long-running terminal views.",
+			"在 cmux 中以右侧分屏、下方分屏或新标签页/界面打开交互式终端命令。适用于用户要求的 TUI、日志、开发服务器、watch 或长时间运行的终端视图。",
 		promptSnippet:
-			"Open an interactive terminal command in cmux when the user asks for a tool or view in another pane, split, tab, or background terminal.",
+			"当用户要求在其它面板、分屏、标签页或后台终端打开工具/视图时，在 cmux 中打开交互式终端命令。",
 		promptGuidelines: [
-			"Use cmux_open_terminal only when the user explicitly asks to open a command in cmux, another pane, split, tab, or background terminal.",
-			"Use cmux_open_terminal with placement='tab' when the user says tab, placement='right' for a side pane, and placement='down' for a below/lower pane.",
-			"Use cmux_open_terminal for interactive TUIs like k9s, lazygit, htop, hunk, log tails, dev servers, or watches; do not use bash for these unless the user wants captured output.",
-			"Do not open terminals proactively with cmux_open_terminal without a user request.",
+			"仅当用户明确要求在 cmux、其它面板、分屏、标签页或后台终端打开命令时，才使用 cmux_open_terminal。",
+			"用户说 tab/标签页时使用 placement='tab'；侧边面板用 placement='right'；下方/底部面板用 placement='down'。",
+			"交互式 TUI（如 k9s、lazygit、htop、hunk）、日志 tail、开发服务器或 watch 应使用 cmux_open_terminal；除非用户想捕获输出，否则不要用 bash 打开这些命令。",
+			"不要在用户未要求时主动使用 cmux_open_terminal 打开终端。",
 		],
 		parameters: CMUX_OPEN_TERMINAL_PARAMETERS as any,
 		executionMode: "sequential",
@@ -423,7 +423,7 @@ function registerAgentTerminalTool(pi: ExtensionAPI): void {
 
 			const location = getPlacementLabel(result.placement);
 			return {
-				content: [{ type: "text", text: `Opened ${result.command} in a cmux ${location}.` }],
+				content: [{ type: "text", text: `已在 cmux ${location}中打开 ${result.command}。` }],
 				details: {
 					command: result.command,
 					placement: result.placement,
@@ -466,7 +466,7 @@ function registerConfiguredSplitCommands(pi: ExtensionAPI): void {
 	for (const [commandName, config] of loadConfiguredSplitCommands(process.cwd())) {
 		const normalizedName = commandName.toLowerCase();
 		if (RESERVED_COMMAND_NAMES.has(normalizedName) || registeredConfiguredNames.has(normalizedName)) {
-			console.warn(`[pi-cmux] Skipping configured command /${commandName}: command already exists`);
+			console.warn(`[pi-cmux] 跳过自定义命令 /${commandName}：命令已存在`);
 			continue;
 		}
 		registerConfiguredSplitCommand(pi, commandName, config);

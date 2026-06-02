@@ -64,21 +64,21 @@ async function resolveZoxideTarget(
 
 	const keywords = query.trim().split(/\s+/).filter((part) => part.length > 0);
 	if (keywords.length === 0) {
-		return { ok: false, error: `Usage: /${commandName} <query>` };
+		return { ok: false, error: `用法：/${commandName} <查询或路径>` };
 	}
 
 	const result = await pi.exec("zoxide", ["query", ...keywords], { timeout: ZOXIDE_TIMEOUT_MS });
 	if (result.killed) {
-		return { ok: false, error: "zoxide query timed out" };
+		return { ok: false, error: "zoxide 查询超时" };
 	}
 	if (result.code !== 0) {
-		const message = result.stderr.trim() || result.stdout.trim() || "No zoxide match found";
+		const message = result.stderr.trim() || result.stdout.trim() || "没有找到匹配的 zoxide 目录";
 		return { ok: false, error: message };
 	}
 
 	const targetPath = result.stdout.trim();
 	if (!targetPath) {
-		return { ok: false, error: "No zoxide match found" };
+		return { ok: false, error: "没有找到匹配的 zoxide 目录" };
 	}
 
 	return { ok: true, path: targetPath };
@@ -117,7 +117,7 @@ function registerZoxideCommand(
 		handler: async (args, ctx) => {
 			const query = args.trim();
 			if (!query) {
-				ctx.ui.notify(`Usage: /${name} <query>`, "warning");
+				ctx.ui.notify(`用法：/${name} <查询或路径>`, "warning");
 				return;
 			}
 
@@ -125,7 +125,7 @@ function registerZoxideCommand(
 			if (result.ok) {
 				ctx.ui.notify(successMessage, "info");
 			} else {
-				ctx.ui.notify(`zoxide failed: ${result.error}`, "error");
+				ctx.ui.notify(`zoxide 打开失败：${result.error}`, "error");
 			}
 		},
 	});
@@ -136,29 +136,29 @@ export default function cmuxZoxideExtension(pi: ExtensionAPI) {
 		pi,
 		"cmz",
 		"right",
-		"Open a new right split for a zoxide directory match and start pi there",
-		"Opened a new zoxide split to the right",
+		"匹配 zoxide 目录并在右侧新开 Pi",
+		"已在右侧打开 zoxide 分屏",
 	);
 	registerZoxideCommand(
 		pi,
 		"z",
 		"right",
-		"Alias for /cmz",
-		"Opened a new zoxide split to the right",
+		"/cmz 的别名",
+		"已在右侧打开 zoxide 分屏",
 	);
 
 	registerZoxideCommand(
 		pi,
 		"cmzh",
 		"down",
-		"Open a new lower split for a zoxide directory match and start pi there",
-		"Opened a new zoxide split below",
+		"匹配 zoxide 目录并在下方新开 Pi",
+		"已在下方打开 zoxide 分屏",
 	);
 	registerZoxideCommand(
 		pi,
 		"zh",
 		"down",
-		"Alias for /cmzh",
-		"Opened a new zoxide split below",
+		"/cmzh 的别名",
+		"已在下方打开 zoxide 分屏",
 	);
 }

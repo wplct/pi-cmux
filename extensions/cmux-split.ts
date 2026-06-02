@@ -30,7 +30,7 @@ function registerSplitCommand(
 			if (result.ok) {
 				ctx.ui.notify(successMessage, "info");
 			} else {
-				ctx.ui.notify(`cmux split failed: ${result.error}`, "error");
+				ctx.ui.notify(`cmux 分屏打开失败：${result.error}`, "error");
 			}
 		},
 	});
@@ -41,29 +41,29 @@ export default function cmuxSplitExtension(pi: ExtensionAPI) {
 		pi,
 		"cmv",
 		"right",
-		"Open a new vertical cmux split and start a fresh pi session",
-		"Opened a new vertical cmux split",
+		"在右侧新开 cmux 分屏并启动新的 Pi 会话",
+		"已在右侧打开新的 cmux 分屏",
 	);
 	registerSplitCommand(
 		pi,
 		"cmux-v",
 		"right",
-		"Alias for /cmv",
-		"Opened a new vertical cmux split",
+		"/cmv 的别名",
+		"已在右侧打开新的 cmux 分屏",
 	);
 
 	registerSplitCommand(
 		pi,
 		"cmh",
 		"down",
-		"Open a new horizontal cmux split and start a fresh pi session",
-		"Opened a new horizontal cmux split",
+		"在下方新开 cmux 分屏并启动新的 Pi 会话",
+		"已在下方打开新的 cmux 分屏",
 	);
 	registerSplitCommand(
 		pi,
 		"cmux-h",
 		"down",
-		"Alias for /cmh",
-		"Opened a new horizontal cmux split",
+		"/cmh 的别名",
+		"已在下方打开新的 cmux 分屏",
 	);
 }

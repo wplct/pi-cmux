@@ -7,16 +7,16 @@ const namespace = "pi-cmux";
 const localeChangedEvent = `${namespace}/i18n/localeChanged`;
 
 const fallback = {
-	"open.usage": "Usage: /{name} <command...>",
-	"open.failed": "tool split failed: {error}",
-	"open.failed.tab": "tool tab failed: {error}",
-	"open.right.description": "Open a new right split and run any shell command there",
-	"open.down.description": "Open a new lower split and run any shell command there",
-	"open.tab.description": "Open a new cmux tab and run any shell command there",
-	"open.alias.cmo": "Alias for /cmo",
-	"open.success.right": "Opened a tool split to the right",
-	"open.success.down": "Opened a tool split below",
-	"open.success.tab": "Opened a tool tab",
+	"open.usage": "用法：/{name} <命令...>",
+	"open.failed": "工具分屏打开失败：{error}",
+	"open.failed.tab": "工具标签页打开失败：{error}",
+	"open.right.description": "在右侧新开 cmux 分屏并运行 shell 命令",
+	"open.down.description": "在下方新开 cmux 分屏并运行 shell 命令",
+	"open.tab.description": "在新的 cmux 标签页运行 shell 命令",
+	"open.alias.cmo": "/cmo 的别名",
+	"open.success.right": "已在右侧打开工具分屏",
+	"open.success.down": "已在下方打开工具分屏",
+	"open.success.tab": "已打开工具标签页",
 } as const;
 
 export type I18nKey = keyof typeof fallback;

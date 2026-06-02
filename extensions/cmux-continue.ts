@@ -41,7 +41,7 @@ interface HandoffContext {
 interface HandoffTarget {
 	cwd: string;
 	sessionFile: string;
-	prompt: string;
+	prompt?: string;
 }
 
 interface MessageLike {
@@ -65,7 +65,7 @@ function normalizeWhitespace(text: string): string {
 }
 
 function getContinueUsage(commandName: string): string {
-	return `Usage: /${commandName} [note]  |  /${commandName} -c <branch> [--from <ref>] [note]`;
+	return `用法：/${commandName} [备注] | /${commandName} -c <分支名> [--from <基准>] [备注]`;
 }
 
 function parseContinueArgs(args: string): { ok: true; request: ContinueRequest } | { ok: false; error: string } {
@@ -77,11 +77,11 @@ function parseContinueArgs(args: string): { ok: true; request: ContinueRequest }
 	const tokens = trimmed.split(/\s+/).filter((token) => token.length > 0);
 	const [first, ...rest] = tokens;
 	if (first === "-t" || first === "--tree" || first === "--worktree") {
-		return { ok: false, error: "Existing-branch worktree mode is disabled for now; use -c <branch> to create a new worktree branch" };
+		return { ok: false, error: "暂未启用已有分支 worktree 模式；请使用 -c <分支名> 创建新的 worktree 分支" };
 	}
 	if (first === "-c" || first === "--create") {
 		if (rest.length < 1) {
-			return { ok: false, error: "Create-worktree mode requires a branch name" };
+			return { ok: false, error: "创建 worktree 模式需要指定分支名" };
 		}
 		const [branch, ...remaining] = rest;
 		let fromRef: string | undefined;
@@ -91,7 +91,7 @@ function parseContinueArgs(args: string): { ok: true; request: ContinueRequest }
 			if (token === "--from" || token === "-f") {
 				const next = remaining[index + 1];
 				if (!next) {
-					return { ok: false, error: "--from requires a git ref" };
+					return { ok: false, error: "--from 需要指定 git ref" };
 				}
 				fromRef = next;
 				index += 1;
@@ -103,7 +103,7 @@ function parseContinueArgs(args: string): { ok: true; request: ContinueRequest }
 		return { ok: true, request: { mode: "worktree-create", branch, fromRef, note } };
 	}
 	if (trimmed.startsWith("-")) {
-		return { ok: false, error: `Unknown flag: ${first}` };
+		return { ok: false, error: `未知参数：${first}` };
 	}
 
 	return { ok: true, request: { mode: "handoff", note: trimmed } };
@@ -293,7 +293,8 @@ function appendUserMessage(sessionManager: SessionManager, text: string): void {
 	});
 }
 
-function createForkedSameCheckoutSession(ctx: ExtensionCommandContext, summary: string): string | undefined {
+function createForkedSameCheckoutSession(ctx: ExtensionCommandContext, summary?: string): string | undefined {
+	// 同目录分屏默认只 fork 当前会话历史，避免无意义的 handoff 文本污染新面板。
 	const currentSessionFile = ctx.sessionManager.getSessionFile();
 	const leafId = ctx.sessionManager.getLeafId();
 	if (!currentSessionFile || !leafId) return undefined;
@@ -302,14 +303,19 @@ function createForkedSameCheckoutSession(ctx: ExtensionCommandContext, summary: 
 	const branchedSessionFile = currentSession.createBranchedSession(leafId);
 	if (!branchedSessionFile) return undefined;
 
-	const branchedSession = SessionManager.open(branchedSessionFile, ctx.sessionManager.getSessionDir());
-	appendUserMessage(branchedSession, summary);
+	if (summary?.trim()) {
+		const branchedSession = SessionManager.open(branchedSessionFile, ctx.sessionManager.getSessionDir());
+		appendUserMessage(branchedSession, summary);
+	}
 	return branchedSessionFile;
 }
 
-function createSummaryOnlySession(cwd: string, summary: string): string | undefined {
+function createSummaryOnlySession(cwd: string, summary?: string): string | undefined {
+	// 无法 fork 时退化为新会话；只有明确传入摘要时才追加交接文本。
 	const sessionManager = SessionManager.create(cwd);
-	appendUserMessage(sessionManager, summary);
+	if (summary?.trim()) {
+		appendUserMessage(sessionManager, summary);
+	}
 	return sessionManager.getSessionFile();
 }
 
@@ -336,27 +342,24 @@ async function resolveHandoffTarget(
 	request: ContinueRequest,
 ): Promise<{ ok: true; target: HandoffTarget } | { ok: false; error: string }> {
 	if (request.mode === "handoff") {
-		const context = await buildHandoffContext(pi, ctx, request.note);
-		const expectInheritedHistory = Boolean(context.sourceSessionFile && ctx.sessionManager.getLeafId());
-		const summary = buildHandoffSummary(context, expectInheritedHistory);
-		const forkedSessionFile = createForkedSameCheckoutSession(ctx, summary);
-		const sessionFile = forkedSessionFile || createSummaryOnlySession(ctx.cwd, summary);
+		const forkedSessionFile = createForkedSameCheckoutSession(ctx);
+		const sessionFile = forkedSessionFile || createSummaryOnlySession(ctx.cwd);
 		if (!sessionFile) {
-			return { ok: false, error: "Failed to create a handoff session" };
+			return { ok: false, error: "创建同上下文会话失败" };
 		}
 		return {
 			ok: true,
 			target: {
 				cwd: ctx.cwd,
 				sessionFile,
-				prompt: buildSameCheckoutPrompt(request.note, Boolean(forkedSessionFile)),
+				prompt: request.note,
 			},
 		};
 	}
 
 	const repo = await getGitRepoInfo(pi, ctx.cwd);
 	if (!repo) {
-		return { ok: false, error: "Not inside a git repository" };
+		return { ok: false, error: "当前不在 git 仓库中" };
 	}
 
 	const worktreeResult = await ensureCreatedBranchWorktree(pi, repo.repoRoot, request.branch, request.fromRef);
@@ -371,7 +374,7 @@ async function resolveHandoffTarget(
 	const summary = buildHandoffSummary(context, false);
 	const sessionFile = createSummaryOnlySession(worktreeResult.path, summary);
 	if (!sessionFile) {
-		return { ok: false, error: "Failed to create a worktree handoff session" };
+		return { ok: false, error: "创建 worktree 接力会话失败" };
 	}
 
 	return {
@@ -395,6 +398,7 @@ async function openContinueSplit(
 		return handoffTarget;
 	}
 
+	const tabTitle = request.mode === "handoff" ? "Pi" : "Continue";
 	return openCommandInNewSplit(
 		pi,
 		direction,
@@ -402,7 +406,7 @@ async function openContinueSplit(
 			sessionFile: handoffTarget.target.sessionFile,
 			prompt: handoffTarget.target.prompt,
 		}),
-		{ tabTitle: await buildContextualTabTitle(pi, handoffTarget.target.cwd, "Continue", "Continue") },
+		{ tabTitle: await buildContextualTabTitle(pi, handoffTarget.target.cwd, tabTitle, tabTitle) },
 	);
 }
 
@@ -426,7 +430,7 @@ function registerContinueCommand(
 			if (result.ok) {
 				ctx.ui.notify(successMessage, "info");
 			} else {
-				ctx.ui.notify(`continuation split failed: ${result.error}`, "error");
+				ctx.ui.notify(`接力分屏打开失败：${result.error}`, "error");
 			}
 		},
 	});
@@ -437,15 +441,15 @@ export default function cmuxContinueExtension(pi: ExtensionAPI) {
 		pi,
 		"cmcv",
 		"right",
-		"Open a new right split and continue the current task, optionally in a git worktree",
-		"Opened a continuation split to the right",
+		"在右侧打开同上下文 Pi；带备注时作为启动提示，-c 可创建 git worktree 接力",
+		"已在右侧打开同上下文分屏",
 	);
 
 	registerContinueCommand(
 		pi,
 		"cmch",
 		"down",
-		"Open a new lower split and continue the current task, optionally in a git worktree",
-		"Opened a continuation split below",
+		"在下方打开同上下文 Pi；带备注时作为启动提示，-c 可创建 git worktree 接力",
+		"已在下方打开同上下文分屏",
 	);
 }
