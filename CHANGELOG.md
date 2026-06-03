@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added bundled `cmux-feedback-notify` so blocking structured feedback tools such as `ask_user_question` trigger an immediate `cmux notify` alert.
+
+### Changed
+
+- Changed same-checkout `/cmcv` and `/cmch` splits to fork the current conversation context without injecting a handoff summary; an optional note is now sent as the initial prompt instead.
+- Localized bundled slash-command descriptions and usage/error copy for this fork.
+
 ## [0.1.16] - 2026-05-27
 
 ### Added

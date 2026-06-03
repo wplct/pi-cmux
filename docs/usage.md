@@ -4,9 +4,9 @@ Detailed usage for the cmux integrations bundled with `pi-cmux`.
 
 ## Notifications
 
-`cmux-notify` sends `cmux notify` alerts when Pi finishes a run.
+`cmux-notify` sends `cmux notify` alerts when Pi finishes a run, and `cmux-feedback-notify` sends an immediate alert before blocking structured feedback tools such as `ask_user_question` open.
 
-Notification fields:
+Completion/wait/error notification fields:
 - title: `Pi` by default
 - subtitle: `Waiting`, `Task Complete`, or `Error`
 - body: short run summary
@@ -27,6 +27,16 @@ PI_CMUX_NOTIFY_LEVEL=all       # Waiting, Task Complete, Error
 PI_CMUX_NOTIFY_LEVEL=medium    # Task Complete, Error
 PI_CMUX_NOTIFY_LEVEL=low       # Error only
 PI_CMUX_NOTIFY_LEVEL=disabled  # off
+```
+
+Feedback-notification controls:
+
+```bash
+PI_CMUX_FEEDBACK_NOTIFY=1                         # set 0 to disable
+PI_CMUX_FEEDBACK_TOOLS=ask_user_question         # comma-separated tool names
+PI_CMUX_FEEDBACK_TITLE="Pi needs feedback"      # feedback notification title
+PI_CMUX_FEEDBACK_SUBTITLE="Action required"    # feedback notification subtitle
+CMUX_SUPPRESS_SUBAGENT_NOTIFICATIONS=1           # set 0 to notify for subagents too
 ```
 
 ## Sidebar status/log
@@ -223,9 +233,10 @@ Legacy aliases:
 /cmch -c <branch> [--from <ref>] [note]
 ```
 
-- `/cmcv` opens a continuation split to the right.
-- `/cmch` opens a continuation split below.
-- Notes are added as focus context.
+- `/cmcv` opens a same-context split to the right.
+- `/cmch` opens a same-context split below.
+- Without `-c`, the new pane forks the current conversation path when possible and does not inject a handoff summary.
+- Notes are sent as the initial prompt in the new pane.
 - `-c <branch>` creates a new branch worktree and starts Pi there.
 - `--from <ref>` chooses the base ref for the new worktree branch.
 
@@ -240,9 +251,9 @@ Examples:
 /cmch -c feature/review-ui focus on edge cases
 ```
 
-Same-checkout continuation creates a related handoff session and adds a summary of the current context. If the current Pi session is persisted, the new pane also inherits the current conversation path.
+Same-checkout continuation forks the current conversation path when the session is persisted. If Pi cannot fork the current session, it falls back to a fresh session in the same working directory. When you add a note, that note is sent as the first prompt in the new pane.
 
-Worktree continuation starts a new session in the target worktree and seeds it with structured handoff context from the source pane.
+Worktree continuation still starts a new session in the target worktree and seeds it with structured handoff context from the source pane.
 
 ## Review workflows
 
@@ -290,6 +301,12 @@ PI_CMUX_NOTIFY_THRESHOLD_MS=15000
 PI_CMUX_NOTIFY_DEBOUNCE_MS=3000
 PI_CMUX_NOTIFY_TITLE=Pi
 PI_CMUX_NOTIFY_INCLUDE_RESPONSE=0|1
+
+PI_CMUX_FEEDBACK_NOTIFY=0|1
+PI_CMUX_FEEDBACK_TOOLS=<tool1,tool2>
+PI_CMUX_FEEDBACK_TITLE=<title>
+PI_CMUX_FEEDBACK_SUBTITLE=<subtitle>
+CMUX_SUPPRESS_SUBAGENT_NOTIFICATIONS=0|1
 
 PI_CMUX_SIDEBAR=0|1
 PI_CMUX_SIDEBAR_FLASH=all|error|disabled
